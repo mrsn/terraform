@@ -1,6 +1,7 @@
 package aws
 
 import (
+	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/hashicorp/terraform/helper/schema"
@@ -51,7 +52,7 @@ func resourceAwsEipAssociation() *schema.Resource {
 func resourceAwsEipAssociationCreate(d *schema.ResourceData, meta interface{}) error {
 	ec2conn := meta.(*AWSClient).ec2conn
 
-	opts := getAwsEIPAssociationInput(d)
+	opts := getAwsEipAssociationInput(d)
 	resp, err := ec2conn.AssociateAddress(&opts)
 
 	if err != nil {
@@ -61,10 +62,43 @@ func resourceAwsEipAssociationCreate(d *schema.ResourceData, meta interface{}) e
 	d.SetId(*resp.AssociationId)
 	log.Printf("[INFO] AssociationId: %v", *resp.AssociationId)
 
-	return nil
+	return resourceAwsEipAssociationRead(d, meta)
 }
 
 func resourceAwsEipAssociationRead(d *schema.ResourceData, meta interface{}) error {
+	ec2conn := meta.(*AWSClient).ec2conn
+
+	EIPAssociationFilter := &ec2.Filter{
+		Name:   aws.String("association-id"),
+		Values: []*string{aws.String(d.Id())},
+	}
+
+	opts := &ec2.DescribeAddressesInput{
+		Filters: []*ec2.Filter{EIPAssociationFilter},
+	}
+
+	resp, err := ec2conn.DescribeAddresses(opts)
+
+	if err != nil {
+		return err
+	}
+
+	if len(resp.Addresses) != 1 {
+		return fmt.Errorf("[ERROR] Error finding EIPAssociation: %s", d.Id())
+	}
+
+	if resp == nil {
+		d.SetId("")
+		return nil
+	}
+
+	address := resp.Addresses[0]
+	d.Set("allocation_id", address.AllocationId)
+	d.Set("public_ip", address.PublicIp)
+	d.Set("instance_id", address.InstanceId)
+	d.Set("network_interface_id", address.NetworkInterfaceId)
+	d.Set("private_ip", address.PrivateIpAddress)
+
 	return nil
 }
 
@@ -90,7 +124,7 @@ func resourceAwsEipAssociationDelete(d *schema.ResourceData, meta interface{}) e
 	return nil
 }
 
-func getAwsEIPAssociationInput(d *schema.ResourceData) ec2.AssociateAddressInput {
+func getAwsEipAssociationInput(d *schema.ResourceData) ec2.AssociateAddressInput {
 	EIPAssociationOpts := ec2.AssociateAddressInput{}
 
 	if allocation_id_value, ok := d.GetOk("allocation_id"); ok {
