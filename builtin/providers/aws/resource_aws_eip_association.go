@@ -15,15 +15,34 @@ func resourceAwsEipAssociation() *schema.Resource {
 		Delete: resourceAwsEipAssociationDelete,
 
 		Schema: map[string]*schema.Schema{
-			// Allocation ID for the VPC Elastic IP address to be associated
 			"allocation_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
 			},
-
+			"public_ip": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
 			"instance_id": &schema.Schema{
 				Type:     schema.TypeString,
-				Required: true,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"network_interface_id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+				ForceNew: true,
+			},
+			"private_ip": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
 			},
 		},
 	}
@@ -32,24 +51,15 @@ func resourceAwsEipAssociation() *schema.Resource {
 func resourceAwsEipAssociationCreate(d *schema.ResourceData, meta interface{}) error {
 	ec2conn := meta.(*AWSClient).ec2conn
 
-	log.Printf(
-		"[INFO] Eip association: %s => %s",
-		d.Get("allocation_id").(string),
-		d.Get("instance_id").(string))
-
-	AssociateAddressInput := &ec2.AssociateAddressInput{
-		AllocationId: aws.String(d.Get("allocation_id").(string)),
-		InstanceId:   aws.String(d.Get("instance_id").(string)),
-	}
-
-	resp, err := ec2conn.AssociateAddress(AssociateAddressInput)
+	opts := getAwsEIPAssociationInput(d)
+	resp, err := ec2conn.AssociateAddress(&opts)
 
 	if err != nil {
 		return err
 	}
 
 	d.SetId(*resp.AssociationId)
-	log.Printf("[INFO] Association ID: %s", d.Id())
+	log.Printf("[INFO] AssociationId: %v", *resp.AssociationId)
 
 	return nil
 }
@@ -78,4 +88,30 @@ func resourceAwsEipAssociationDelete(d *schema.ResourceData, meta interface{}) e
 	}
 
 	return nil
+}
+
+func getAwsEIPAssociationInput(d *schema.ResourceData) ec2.AssociateAddressInput {
+	EIPAssociationOpts := ec2.AssociateAddressInput{}
+
+	if allocation_id_value, ok := d.GetOk("allocation_id"); ok {
+		EIPAssociationOpts.AllocationId = aws.String(allocation_id_value.(string))
+	}
+
+	if public_ip_value, ok := d.GetOk("public_ip"); ok {
+		EIPAssociationOpts.PublicIp = aws.String(public_ip_value.(string))
+	}
+
+	if instance_id_value, ok := d.GetOk("instance_id"); ok {
+		EIPAssociationOpts.InstanceId = aws.String(instance_id_value.(string))
+	}
+
+	if network_interface_id_value, ok := d.GetOk("network_interface_id"); ok {
+		EIPAssociationOpts.NetworkInterfaceId = aws.String(network_interface_id_value.(string))
+	}
+
+	if private_ip_value, ok := d.GetOk("private_ip"); ok {
+		EIPAssociationOpts.PrivateIpAddress = aws.String(private_ip_value.(string))
+	}
+
+	return EIPAssociationOpts
 }
