@@ -68,13 +68,13 @@ func resourceAwsEipAssociationCreate(d *schema.ResourceData, meta interface{}) e
 func resourceAwsEipAssociationRead(d *schema.ResourceData, meta interface{}) error {
 	ec2conn := meta.(*AWSClient).ec2conn
 
-	EIPAssociationFilter := &ec2.Filter{
+	eipAssociationFilter := &ec2.Filter{
 		Name:   aws.String("association-id"),
 		Values: []*string{aws.String(d.Id())},
 	}
 
 	opts := &ec2.DescribeAddressesInput{
-		Filters: []*ec2.Filter{EIPAssociationFilter},
+		Filters: []*ec2.Filter{eipAssociationFilter},
 	}
 
 	resp, err := ec2conn.DescribeAddresses(opts)
@@ -111,11 +111,11 @@ func resourceAwsEipAssociationDelete(d *schema.ResourceData, meta interface{}) e
 
 	log.Printf("[INFO] Disassociate an elastic ip: %s", d.Id())
 
-	DisAssociateAddressInput := &ec2.DisassociateAddressInput{
+	disassociateAddressInput := &ec2.DisassociateAddressInput{
 		AssociationId: aws.String(d.Id()),
 	}
 
-	_, err := ec2conn.DisassociateAddress(DisAssociateAddressInput)
+	_, err := ec2conn.DisassociateAddress(disassociateAddressInput)
 
 	if err != nil {
 		return err
@@ -125,27 +125,27 @@ func resourceAwsEipAssociationDelete(d *schema.ResourceData, meta interface{}) e
 }
 
 func getAwsEipAssociationInput(d *schema.ResourceData) ec2.AssociateAddressInput {
-	EIPAssociationOpts := ec2.AssociateAddressInput{}
+	eipAssociationOpts := ec2.AssociateAddressInput{}
 
 	if allocation_id_value, ok := d.GetOk("allocation_id"); ok {
-		EIPAssociationOpts.AllocationId = aws.String(allocation_id_value.(string))
+		eipAssociationOpts.AllocationId = aws.String(allocation_id_value.(string))
 	}
 
 	if public_ip_value, ok := d.GetOk("public_ip"); ok {
-		EIPAssociationOpts.PublicIp = aws.String(public_ip_value.(string))
+		eipAssociationOpts.PublicIp = aws.String(public_ip_value.(string))
 	}
 
 	if instance_id_value, ok := d.GetOk("instance_id"); ok {
-		EIPAssociationOpts.InstanceId = aws.String(instance_id_value.(string))
+		eipAssociationOpts.InstanceId = aws.String(instance_id_value.(string))
 	}
 
 	if network_interface_id_value, ok := d.GetOk("network_interface_id"); ok {
-		EIPAssociationOpts.NetworkInterfaceId = aws.String(network_interface_id_value.(string))
+		eipAssociationOpts.NetworkInterfaceId = aws.String(network_interface_id_value.(string))
 	}
 
 	if private_ip_value, ok := d.GetOk("private_ip"); ok {
-		EIPAssociationOpts.PrivateIpAddress = aws.String(private_ip_value.(string))
+		eipAssociationOpts.PrivateIpAddress = aws.String(private_ip_value.(string))
 	}
 
-	return EIPAssociationOpts
+	return eipAssociationOpts
 }

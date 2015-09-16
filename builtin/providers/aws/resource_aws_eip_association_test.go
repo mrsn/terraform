@@ -44,7 +44,7 @@ resource "aws_eip" "bar" {
 }
 
 resource "aws_eip_association" "eip-assoc-foobar" {
-	allocation_id = "${aws_eip.bar.allocation_id}"
+	allocation_id = "${aws_eip.bar.id}"
 	instance_id = "${aws_instance.foo.id}"
 }
 `
