@@ -150,6 +150,9 @@ func resourceAwsEipRead(d *schema.ResourceData, meta interface{}) error {
 	if address.NetworkInterfaceId != nil {
 		d.Set("network_interface", address.NetworkInterfaceId)
 	}
+	if address.AllocationId != nil {
+		d.Set("allocation_id", address.AllocationId)
+	}
 	d.Set("private_ip", address.PrivateIpAddress)
 	d.Set("public_ip", address.PublicIp)
 
